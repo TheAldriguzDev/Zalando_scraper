@@ -15,6 +15,7 @@ class Zalando:
         self.name = ""
         self.color = ""
         self.price = ""
+        self.sku = f'{url.split(".html")[0].split("-")[-2]}-{url.split(".html")[0].split("-")[-1]}'
         self.session = requests.Session()
         self.headers = {
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
@@ -33,10 +34,9 @@ class Zalando:
         self.proxyList = proxyList
         self.proxyStatus = proxyStatus
         
-
     def scraper(self):
         if self.proxyStatus == "YES":
-            print("Getting the product using proxies")
+            print("Getting the site using proxies")
             proxy = random.choice(self.proxyList)
             proxyip = proxy.split(":")[0]
             proxyPort = proxy.split(":")[1]
@@ -105,6 +105,14 @@ class Zalando:
             timestamp="now"
         )
 
+        clickUrl = [f"https://www.zalando.it/catalogo/?q={self.sku}",
+                f"https://www.zalando.de/katalog/?q={self.sku}",
+                f"https://www.zalando.de/katalog/?q={self.sku}",
+                f"https://www.zalando.nl/catalogus/?q={self.sku}",
+                f"https://www.zalando.at/katalog/?q={self.sku}",
+                f"https://www.zalando.pl/katalog/?q={self.sku}",
+        ]
+
         sizeMessage = ""
         pidMessage = ""
         for i in range(len(self.size)):
@@ -124,6 +132,7 @@ class Zalando:
         embed.add_field(name="Name", value=self.name)
         embed.add_field(name="Size", value=sizeMessage)
         embed.add_field(name="Pid", value=f'```{pidMessage}```')
+        embed.add_field(name="Load page", value=f'[IT]({clickUrl[0]}) [DE]({clickUrl[1]}) [FR]({clickUrl[2]}) [NL]({clickUrl[3]}) [UK]({clickUrl[4]}) [PL]({clickUrl[5]})', inline=False)
         embed.set_thumbnail(url=self.image)
         hook.send(embed=embed)
         
