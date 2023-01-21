@@ -2,11 +2,11 @@ import requests
 import bs4 as bs
 import dhooks
 from dhooks import *
+import random
 
 class Zalando:
 
-    def __init__(self, url, webhook):
-        # Declaration of the variables that we are going to use
+    def __init__(self, url, webhook, proxyList, proxyStatus):
         self.url = url
         self.stock = []
         self.size = []
@@ -30,16 +30,49 @@ class Zalando:
             "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
         }
         self.webhook = webhook
+        self.proxyList = proxyList
+        self.proxyStatus = proxyStatus
+        
 
     def scraper(self):
-        productPage = self.session.get(self.url, headers=self.headers, timeout=10).text
+        if self.proxyStatus == "YES":
+            print("Getting the product using proxies")
+            proxy = random.choice(self.proxyList)
+            proxyip = proxy.split(":")[0]
+            proxyPort = proxy.split(":")[1]
+            proxyuser = proxy.split(":")[2]
+            proxypsw = proxy.split(":")[3]
+            try: 
+                proxies = {
+                    'http': 'http://'+proxyuser+':'+proxypsw+'@'+proxyip+':'+proxyPort+'',
+                    'https': 'https://'+proxyuser+':'+proxypsw+'@'+proxyip+':'+proxyPort+'',
+                }
+                productPage = self.session.get(self.url, headers=self.headers, timeout=10, proxies=proxies).text
+                # you can also add bad response status error handling
+                self.parser(productPage)
+            except Exception as e:
+                try:
+                    print("Retrying")
+                    proxies = {
+                        'http': 'http://'+proxyuser+':'+proxypsw+'@'+proxyip+':'+proxyPort+'',
+                    }
+                    productPage = self.session.get(self.url, headers=self.headers, timeout=10, proxies=proxies).text
+                    # you can also add bad response status error handling
+                    self.parser(productPage)
+                except:
+                    print("Proxy not supported")
+        else:
+            print("Getting the product without proxy")
+            productPage = self.session.get(self.url, headers=self.headers, timeout=10).text
+            # you can also add bad response status error handling
+            self.parser(productPage)
+
+    def parser(self, productPage):
         soup = bs.BeautifulSoup(productPage, 'html.parser')
         productPage = productPage.split(',"currency":"')
         for i in range(len(productPage)):
             if '},"price":{"original":{"amount":' in productPage[i]:
                 parsedText = productPage[i]
-
-                #print(parsedText)
 
                 size1 = parsedText[parsedText.index('"size":"')+8:]
                 actualSize = size1[0: size1.index('"')]
@@ -68,7 +101,7 @@ class Zalando:
         hook = Webhook(self.webhook)
         embed = Embed(
             description="Loompaland scraper",
-            color=15813039, # you can modify all the value as you prefer
+            color=15813039,
             timestamp="now"
         )
 
@@ -85,7 +118,6 @@ class Zalando:
                 sizeMessage += f':green_circle: {self.size[i]} [{self.stock[i]}]\n'
             pidMessage += self.pid[i] + " \n"
 
-        # you can modify the webhook values as you prefer
         embed.set_title("Loompaland stock scraped")
         embed.add_field(name="Name", value=self.name + self.color)
         embed.add_field(name="Price", value=self.price)
@@ -96,5 +128,8 @@ class Zalando:
         hook.send(embed=embed)
         
 if __name__ == "__main__":
-    zalandoScraper = Zalando("ENTER_PRODUCT_URL", "DISCORD_WEBHOOK")
+    proxylist = ["ip:port:user:psw",
+            "ip:port:user:psw"] # this is the format supported
+    proxyStatus = "YES" # change to NO if you don't want to use proxies
+    zalandoScraper = Zalando("ENTER PRODUCT URL", "DISCORD_WEBHOOK", proxylist, proxyStatus)
     zalandoScraper.scraper()
