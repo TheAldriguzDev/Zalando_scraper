@@ -6,6 +6,7 @@ from dhooks import *
 class Zalando:
 
     def __init__(self, url, webhook):
+        # Declaration of the variables that we are going to use
         self.url = url
         self.stock = []
         self.size = []
@@ -38,6 +39,8 @@ class Zalando:
             if '},"price":{"original":{"amount":' in productPage[i]:
                 parsedText = productPage[i]
 
+                #print(parsedText)
+
                 size1 = parsedText[parsedText.index('"size":"')+8:]
                 actualSize = size1[0: size1.index('"')]
 
@@ -65,25 +68,30 @@ class Zalando:
         hook = Webhook(self.webhook)
         embed = Embed(
             description="Loompaland scraper",
-            color=15813039,
+            color=15813039, # you can modify all the value as you prefer
             timestamp="now"
         )
 
         sizeMessage = ""
-        stockMessage = ""
         pidMessage = ""
         for i in range(len(self.size)):
-            sizeMessage += self.size[i] + " \n"
-            stockMessage += self.stock[i] + " \n"
+            if self.stock[i] == "OUT_OF_STOCK":
+                sizeMessage += f':red_circle: {self.size[i]} [{self.stock[i]}] \n'
+            elif self.stock[i] == "ONE":
+                sizeMessage += f':orange_circle: {self.size[i]} [{self.stock[i]}]\n'
+            elif self.stock[i] == "TWO":
+                sizeMessage += f':yellow_circle: {self.size[i]} [{self.stock[i]}]\n'
+            else:
+                sizeMessage += f':green_circle: {self.size[i]} [{self.stock[i]}]\n'
             pidMessage += self.pid[i] + " \n"
 
+        # you can modify the webhook values as you prefer
         embed.set_title("Loompaland stock scraped")
         embed.add_field(name="Name", value=self.name + self.color)
         embed.add_field(name="Price", value=self.price)
         embed.add_field(name="Name", value=self.name)
         embed.add_field(name="Size", value=sizeMessage)
-        #embed.add_field(name="Pid", value=pidMessage)
-        embed.add_field(name="Stock", value=stockMessage)
+        embed.add_field(name="Pid", value=f'```{pidMessage}```')
         embed.set_thumbnail(url=self.image)
         hook.send(embed=embed)
         
